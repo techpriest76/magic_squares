@@ -62,8 +62,8 @@ def calc_fitness(cromossomo,L):
         soma=0
         for j in i:
             soma+=j
-            if soma == L*(1+(L**2))/2:
-                fitness-=1
+        if soma == L*(1+(L**2))/2:
+            fitness-=1
     return(fitness)     
 
 def torneio(participantes,L):
