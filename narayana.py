@@ -1,10 +1,8 @@
 import random
+# optimization problem
+#
+# representation as an ordered integer list with no repetition (permutation)
 
-# problema de optimizacao
-#
-# representacao como uma lista de ordena de inteiros sem repeticao (permutacao)
-# mutacao de troca
-#
 #
 #               += 15   |                   +=  34
 #   2 | 7 | 6   += 15   |   1 | 14 | 4 | 15     +=34
@@ -15,231 +13,223 @@ import random
 #                       |   34  34  34  34      34
 #                       |
 #
-#
-# numero de somas = (columnas + filas + diagonales) = (2*n)+2
-# resultao da soma = n((n**2)+1)/2
+# number of sums = (columns + rows + diagonals) = (2*n)+2
+# magic number = n((n**2)+1)/2
 
-def gerar(N,L):
-    pop = []
-    while len(pop)<N:
-        individuo=[]
-        while len(individuo)<(L**2):
-            valor = random.randint(1,(L**2))
-            while valor not in individuo:
-                individuo.append(valor)
-        x0=[]
-        cromossomo=[]
-        for i in individuo:
-            x0.append(i)
-            if len(x0)==L:
-                cromossomo.append(x0)
-                x0=[]
-        pop.append(cromossomo)
-    return(pop)
 
-# mudar para fitness baseado em distancia e nao em bloco
-def calc_fitness(cromossomo,L):
-    fitness=(2*L)+2
-    x1=[]
-    #filas e colunas
-    for i in range(len(cromossomo)):
-        x1.append(cromossomo[i])
-        xs1 = []
-        for j in range(L):
-               xs1.append(cromossomo[j][i])
-        x1.append(xs1)
-    #diagonais
-    while len(x1)<fitness:
-        diagonal1 = []
-        diagonal2 = []
-        for i in range(L):
-            diagonal1.append(cromossomo[i][i])
-            diagonal2.append(cromossomo[i][L-1-i])
-        x1.append(diagonal1)
-        x1.append(diagonal2)
-# resultado da soma = n((n**2)+1)/2
-    for i in x1:
-        soma=0
-        for j in i:
-            soma+=j
-        if soma == L*(1+(L**2))/2:
+def generate(population_size, square_size):
+    pop=[]
+    while len(pop)<population_size:
+        extended_chromosome=[]
+        while len(extended_chromosome)<square_size**2:
+            value = random.randint(1,(square_size**2))
+            while value not in extended_chromosome:
+                extended_chromosome.append(value)
+        chromosome=[]
+        sub_chromosome=[]
+        for element in extended_chromosome:
+            sub_chromosome.append(element)
+            if len(sub_chromosome)==square_size:
+                chromosome.append(sub_chromosome)
+                sub_chromosome=[]
+        pop.append(chromosome)
+    return pop
+
+def calc_fitness(chromosome, square_size):
+    fitness=(2*square_size)+2
+    sub_chromosome=[]
+    #rows and columns
+    for i in range(len(chromosome)):
+        sub_chromosome.append(chromosome[i])
+        temp1=[]
+        for j in range(square_size):
+            temp1.append(chromosome[i][j])
+        sub_chromosome.append(temp1)
+    #diagonals
+    while len(sub_chromosome)<fitness:
+        diagonal1=[]
+        diagonal2=[]
+        for i in range(len(chromosome)):
+            diagonal1.append(chromosome[i][i])
+            diagonal2.append(chromosome[i][square_size-1-i])
+        sub_chromosome.append(diagonal1)
+        sub_chromosome.append(diagonal2)
+    #fitnes calculation
+    for element in sub_chromosome:
+        sum = 0
+        for i in element:
+            sum+=i
+        if sum == square_size*(1+(square_size**2))/2:
             fitness-=1
-    return(fitness)     
+    return fitness
 
-def torneio(participantes,L):
-    ganhadores = []
-    while len(ganhadores) < len(participantes):
-        concursantes=[]
-        fitness_concursantes=[]
-        pos1=random.randint(0,len(participantes)-1)
-        pos2=random.randint(0,len(participantes)-1)
-        concursantes.append(participantes[pos1])
-        concursantes.append(participantes[pos2])
-        for i in concursantes:
-            fitness_concursantes.append(calc_fitness(i,L))
-        indice=fitness_concursantes.index(min(fitness_concursantes))
-        ganhadores.append(concursantes[indice])
-    return ganhadores
+def binary_tournament(contestants, square_size):
+    winners=[]
+    while len(winners)<len(contestants):
+        participants=[]
+        participants_fitness=[]
+        position1=random.randint(0,len(contestants)-1)
+        position2=random.randint(0,len(contestants)-1)
+        participants.append(contestants[position1])
+        participants.append(contestants[position2])
+        for i in participants:
+            participants_fitness.append(calc_fitness(i,square_size))
+        index =  participants_fitness.index(min(participants_fitness))
+        winners.append(participants[index])
+    return winners
 
-def recombinacao(participantes,pc): #recombinacao PMX
-    recombinados=[]
-    for i in participantes:
-        probabilidade=random.random()
-        if probabilidade<=pc:
-            filho=[]
+def crossover_PMX(participants, crossover_rate):
+    offspring=[]
+    for i in participants:
+        probability=random.random()
+        if probability<=crossover_rate:
+            child=[]
             scp=[]
             ncp=[]
-            pai=participantes[random.randint(0,len(participantes)-1)]
-            ##### 2D TO 1D ##########
-            pai1=[]
-            pai2=[]
+            parent0=participants[random.randint(0,len(participants)-1)]
+            # transform from 2D to 1D
+            parent1=[]
+            parent2=[]
             for j in i:
                 for k in j:
-                    pai1.append(k)
-            for j in pai:
+                    parent1.append(k)
+            for j in parent0:
                 for k in j:
-                    pai2.append(k)
-            #########################
-            ponto1=random.randint(0,len(pai1)-1)
-            ponto2=random.randint(ponto1,len(pai1)-1)
-            filho[0:ponto1]=[0]*ponto1
-            filho[ponto1:ponto2]=pai1[ponto1:ponto2]
-            scp[ponto1:ponto2]=pai1[ponto1:ponto2]
-            filho[ponto2:len(pai1)]=[0]*(len(pai1)-ponto2)
-            ncp[ponto1:ponto2]=pai2[ponto1:ponto2]
+                    parent2.append(k)
+            #PMX
+            point1=random.randint(0,len(parent1)-1)
+            point2=random.randint(point1,len(parent1)-1)
+            child[0:point1]=[0]*point1
+            child[point1:point2]=parent1[point1:point2]
+            child[point2:len(parent1)]=[0]*(len(parent1)-point2)
+            scp[point1:point2]=parent1[point1:point2]
+            scp[point1:point2]=parent2[point1:point2]
             for i in range(len(ncp)):
                 if ncp[i] not in scp or ncp[i] not in filho:
-                    pos=pai2.index(scp[i])
-                    if filho[pos]==0:
-                        filho[pos]=ncp[i]
+                    position=parent2.index(scp[i])
+                    if child[position]==0:
+                        child[position]=ncp[i]
                     else:
-                        r=pai2[pai1.index(ncp[i])]
-                        pos2=pai1.index(r)
-                        pos3=pai2.index(ncp[i])
-                        filho[pos2]=pai2[pos3]
-            filho.reverse()
-            for i in range(len(filho)):
-                if filho[i]==0:
-                    for j in pai2:
-                        if j not in filho:
-                            filho[i]=j
-            filho.reverse()
-            recombinados.append(filho)
+                        r=parent2[parent1.index(ncp[i])]
+                        position1=parent1.index(r)
+                        position2=parent2.index(ncp[i])
+                        child[position1]=parent2[position2]
+            child.reverse()
+            for i in range(len(child)):
+                if child[i]==0:
+                    for j in parent2:
+                        if j not in child:
+                            child[i]=j
+            child.reverse()
+            offspring.append(child)
         else:
-            pai1=[]
+            parent0=[]
             for j in i:
                 for k in j:
-                    pai1.append(k)
-            recombinados.append(pai1)
-    return recombinados
+                    parent0.append(k)
+            offspring.append(parent0)
+    return offspring
 
-def mutar(participantes,pm,L):
-    mutados=[]
-    for i in participantes:
-        mutado=[]
+def mutate(participants, mutation_rate, square_size):
+    mutants=[]
+    for i in participants:
+        mutant=[]
         for j in range(len(i)):
-            probabilidade=random.random()
-            if probabilidade<=pm:
-                pos1=random.randint(0,len(i)-1)
-                pos2=random.randint(0,len(i)-1)
-                i[pos1],i[pos2]=i[pos2],i[pos1]            
-        for j in range(0,len(i),L):
-            x=j
-            mutado.append((i[j:j+L]))
-            if len(mutado)==L:
-                mutados.append(mutado)
-    return(mutados)
+            probability=random.random()
+            if probability<=mutation_rate:
+                position1=random.randint(0,len(i)-1)
+                position2=random.randint(0,len(i)-1)
+                i[position1],i[position2]=i[position2],i[position1]
+        #back to 2D from 1D
+        for j in range(0,len(i),square_size):
+            mutant.append((i[j:j+square_size]))
+            if len(mutant)==square_size:
+                mutants.append(mutant)
+    return mutants
 
-def melhor(participantes,L):
-    melhor =calc_fitness(participantes[0],L)
-    indice = 0
-    for i in range(len(participantes)):
-        if calc_fitness(participantes[i],L)<melhor:
-            melhor=calc_fitness(participantes[i],L)
-            indice = i
-    return(participantes[indice],melhor)
+def best(participants,square_size):
+    best=calc_fitness(participants[0],square_size)
+    index=0
+    for i in range(len(participants)):
+        if calc_fitness(participants[i],square_size)<best:
+            best=calc_fitness(participants[i],square_size)
+            index=i
+    return (participants[index],best)
 
-def elitismo(pop1,fitness1,pop2,fitness2,elite):
-    fi=[]
-    fi2=[]
-    purga=[]
+def elitism(pop1, fitness1, pop2, fitness2, elite_size):
+    fitness_index1 = []
+    fitness_index2 = []
+    purged = []
     for i in range(len(pop1)):
-        sfi=[]
-        sfi2=[]
-        sfi.append(fitness1[i])
-        sfi.append(i)
-        sfi2.append(fitness2[i])
-        sfi2.append(i)
-        fi.append(sfi)
-        fi2.append(sfi2)
-    fi.sort(key=lambda sfi:sfi[0])
-    fi2.sort(reverse=True, key=lambda sfi2:sfi2[0])
-    k=int(len(pop1)*elite)
-    purga[0:k]=pop1[0:k]
-    purga[k:len(pop1)]=pop2[k:len(pop1)]
-    return purga
+        sub_fitness_index1 = [fitness1[i], i]
+        sub_fitness_index2 = [fitness2[i], i]
+        fitness_index1.append(sub_fitness_index1)
+        fitness_index2.append(sub_fitness_index2)
+    fitness_index1.sort(key=lambda sfi: sfi[0])
+    fitness_index2.sort(reverse=True, key=lambda sfi2: sfi2[0])
+    cut_point = int(len(pop1) * elite_size)
+    purged = pop1[:cut_point] + pop2[cut_point:]
+    return purged
 
 
-###############################################################################
-###############################################################################
-###############################################################################
-###############################################################################
+##########################################################
 
-L=4
-N=200
-pc=0.8
-pm=1/(L**2)
-semente=1729
-rodada=0
-geracoes=500
-elite=0.05
+random_seed=1729
+population_size=500
+square_size=4
+crossover_rate=0.8
+mutation_rate=1/(square_size**2)
+max_generations=2000
+elite_size=0.01
+max_cycles=10
+current_cycle=0
 
-melhores=[]
-melhores_fit=[]
-num_gera=[]
+best_individuals_overall=[]
+best_fitness_overall=[]
+number_of_generations=[]
 
-while rodada<10:
-    random.seed(semente+rodada)
-    melhor_r=0
-    melhor_r_fit=(L*((L**2)+1))/2
-    best_gera=0
-    rodada+=1
-    populacao=gerar(N,L)
-    for i in populacao:
-        geracao=0
-    while geracao<geracoes:
-        print('rodada: ',rodada)
-        ganhadores=torneio(populacao,L) 
-        recombinados=recombinacao(ganhadores,pc)
-        mutados=mutar(recombinados,pm,L)
+
+while (current_cycle<max_cycles):
+    random.seed(random_seed+current_cycle)
+    best_individual=[]
+    best_generation_number=0
+    best_from_cycle=[]
+    best_fitness_from_cycle=(square_size*((square_size**2)+1))/2
+    current_generation=0
+    pop = generate(population_size,square_size)
+    #old_pop=pop.copy()
+    while(current_generation<max_generations):
+        print('Cycle number: ', current_cycle+1)
+        winners=binary_tournament(pop,square_size)
+        offspring=crossover_PMX(winners,crossover_rate)
+        mutants=mutate(offspring,mutation_rate,square_size)
         fitness_pop=[]
-        fitness_mut=[]
-        for i in range(len(populacao)): 
-            fitness_pop.append(calc_fitness(populacao[i],L))
-            fitness_mut.append(calc_fitness(mutados[i],L))
-        populacao=elitismo(populacao,fitness_pop,mutados,fitness_mut,elite)
-        best=melhor(populacao,L)
-        print(best[0],'-------',' geracao: ',(geracao+1),'-------','fitness:',(calc_fitness(best[0],L)))
-        if best[1]==0:
-            melhor_r=best[0]
-            melhor_r_fit=best[1]
-            best_gera=geracao
+        fitness_mutants=[]
+        for i in range(len(pop)):
+            fitness_pop.append(calc_fitness(pop[i],square_size))
+            fitness_mutants.append(calc_fitness(mutants[i],square_size))
+        pop=elitism(pop,fitness_pop,mutants,fitness_mutants,elite_size)
+        best_individual=best(pop,square_size)
+        print(best_individual[0],'-------',' generation: ',(current_generation+1),'-------','fitness:',(calc_fitness(best_individual[0],square_size)))
+        if best_individual[1]==0:
+            best_from_cycle=best_individual[0]
+            best_fitness_from_cycle=best_individual[1]
+            best_generation_number=current_generation
             break
-        if melhor_r_fit>best[1]:
-            melhor_r_fit=best[1]
-            melhor_r=best[0]
-            best_gera=geracao
-        geracao+=1
-    num_gera.append(best_gera)
-    melhores.append(melhor_r)
-    melhores_fit.append(melhor_r_fit)
-    print(' ')
-
-print('################## Melhor de cada rodada #########################')
+        if best_fitness_from_cycle>best_individual[1]:
+            best_fitness_from_cycle=best_individual[1]
+            best_from_cycle=best_individual[0]
+            best_generation_number=current_generation
+        current_generation+=1
+    number_of_generations.append(best_generation_number)
+    best_individuals_overall.append(best_from_cycle)
+    best_fitness_overall.append(best_fitness_from_cycle)
+    print("")
+    current_cycle+=1
+print('####### best from each cycle: #######')
 print(' ')
-for i in range(len(melhores)):
-    for j in melhores[i]:
+for i in range(len(best_individuals_overall)):
+    for j in best_individuals_overall[i]:
         print(j)
-    print('fit ---',melhores_fit[i],'geracao ---',num_gera[i]) 
+    print('fit ---',best_fitness_overall[i],'generation ---',number_of_generations[i])
     print(' ')
-
